@@ -1,0 +1,126 @@
+name: example-analytics-alarms-new-1
+description: "This stylebook defines an example operations component."
+display-name: "SB Operations (LB & CS)"
+namespace: com.acme.stylebooks
+schema-version: "1.0"
+version: "0.1"
+import-stylebooks:
+  -
+    namespace: netscaler.nitro.config
+    prefix: ns
+    version: "10.5"
+parameters:
+  -
+    name: cs-params
+    type: object
+    required: true
+    parameters:
+      -
+        name: csname
+        type: string
+        required: true
+      -
+        name: vip-params
+        type: object
+        required: true
+        parameters:
+          -
+            name: vip
+            type: ipaddress
+            required: true
+  -
+    name: appflowfilter
+    type: string
+    required: true
+  -
+    name: emailprofile
+    type: string
+    required: true
+  -
+    name: period
+    type: string
+    required: true
+  -
+    name: vip-params
+    type: object[]
+    required: true
+    parameters:
+      -
+        name: lbname
+        type: string
+        required: true
+      -
+        name: vip
+        type: ipaddress
+        required: true
+      -
+        name: lbmethod
+        type: string
+        required: true
+substitutions:
+  analytics_object_cstype: csvserver
+  analytics_object_lbtype: lbvserver
+components:
+  -
+    name: my-csvserver-comp
+    type: ns::csvserver
+    properties:
+      name: $parameters.cs-params.csname
+      servicetype: HTTP
+      ipv46: $parameters.cs-params.vip-params.vip
+      port: 80
+    components:
+      -
+        name: my-lbvserver-comp
+        type: ns::lbvserver
+        properties:
+          name: a1
+          servicetype: HTTP
+          ipv46: 192.168.1.1
+          port: 80
+  -
+    name: my-lbvserver-comp
+    type: ns::lbvserver
+    repeat: $parameters.vip-params
+    repeat-item: vs
+    properties:
+      name: $vs.lbname
+      servicetype: HTTP
+      ipv46: $vs.vip
+      port: 80
+      lbmethod: $vs.lbmethod
+outputs:
+  -
+    name: mycs
+    value: $components.my-csvserver-comp
+  -
+    name: mylbs
+    value: $components.my-lbvserver-comp
+operations:
+  analytics:
+    -
+      name: csvserver-op
+      properties:
+        target: $outputs.mycs
+        filter: $parameters.appflowfilter
+        insights:
+          - 
+            type: webinsight
+  alarms:
+  -
+    name: csvserver_alarm
+    properties:
+      target: $outputs.mycs
+      email-profile: $parameters.emailprofile
+      sms-profile: "NetScalerSMS"
+      rules:
+        -
+          period-unit: $parameters.period
+          metric: "total_requests"
+          operator: "greaterthan"
+          value: 25
+        -
+          period-unit: "day"
+          metric: "total_bytes"
+          operator: "lessthan"
+          value: 60
