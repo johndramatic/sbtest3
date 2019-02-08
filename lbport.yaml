@@ -13,4 +13,4 @@ parameters:
     type: tcp-port
     gui:
       updatable: false
-    default: 97
+    default: 96
