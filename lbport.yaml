@@ -12,5 +12,5 @@ parameters:
     description: "TCP port representing the Load Balanced application"
     type: tcp-port
     gui:
-      updatable: false
+      updatabl: false
     default: 87
